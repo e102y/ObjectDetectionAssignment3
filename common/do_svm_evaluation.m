@@ -1,4 +1,4 @@
-function do_naive_bayes_evaluation(config_file)
+function do_svm_evaluation(config_file)
 
 %% Test and plot graphs for a naive bayes classifier learnt with do_naive_bayes.m
 
@@ -111,51 +111,24 @@ for a=1:length(neg_ip_file_names)
     X_bg(:,a) = histg';    
 end 
 
-%% positive is index 1
-%% negitive class is index 2
-
-%%%% do everything in log-space for numerical reasons....
-
-%%% positive model on positive test images
-for a=1:length(pos_ip_file_names)
-    Pc_d_pos_test(1,a) = log(class_priors(1)) + sum(X_fg(:,a) .* log(Pw_pos)); 
-end
-
-%%% negative model on positive test images
-for a=1:length(pos_ip_file_names)
-    Pc_d_pos_test(2,a) = log(class_priors(2)) + sum(X_fg(:,a) .* log(Pw_neg)); 
-end
-
-%%% would normalise Pc_d_pos if it wasn't for serious numerical issues is
-%%% VQ.Codebook_Size is large, so just leave unnormalised.
-
-%%% positive model on negative test images
-for a=1:length(neg_ip_file_names)
-    Pc_d_neg_test(1,a) = log(class_priors(1)) + sum(X_bg(:,a) .* log(Pw_pos)); 
-end
-
-%%% negative model on negitive test images
-for a=1:length(neg_ip_file_names)
-    Pc_d_neg_test(2,a) = log(class_priors(2)) + sum(X_bg(:,a) .* log(Pw_neg)); 
-end
-
-%%% would normalise Pc_d_pos if it wasn't for serious numerical issues is
-%%% VQ.Codebook_Size is large, so just leave unnormalised.
+labels = [ones(1,length(X_fg)) , zeros(1,length(X_bg))].';
+%%% Now train the SVM
+histograms = [X_fg; X_bg];
 
 %%% Compute ROC and RPC on test data
-labels = [ones(1,length(pos_ip_file_names)) , zeros(1,length(neg_ip_file_names))];
 %%% use ratio of probabilities to avoid numerical issues
-values = [Pc_d_pos_test(1,:)-Pc_d_pos_test(2,:) , Pc_d_neg_test(1,:)-Pc_d_neg_test(2,:)];
+[predictY, score] = predict(SVMModel, histograms);
 
 %%% compute roc
-[roc_curve_test,roc_op_test,roc_area_test,roc_threshold_test] = roc([values;labels]');
+rocInputMatrix = [score(:,1),labels];
+[roc_curve_test,roc_op_test,roc_area_test,roc_threshold_test] = roc(rocInputMatrix);
 fprintf('Testing: Area under ROC curve = %f\n', roc_area_test);
 %%% compute rpc
-[rpc_curve_test,rpc_ap_test,rpc_area_test,rpc_threshold_test] = recall_precision_curve([values;labels]',length(pos_ip_file_names));
+[rpc_curve_test,rpc_ap_test,rpc_area_test,rpc_threshold_test] = recall_precision_curve(rocInputMatrix,length(pos_ip_file_names));
 fprintf('Testing: Area under RPC curve = %f\n', rpc_area_test);
 
 %%% save variables to file
-save(model_fname,'Pc_d_pos_test','Pc_d_neg_test','roc_curve_test','roc_op_test','roc_area_test','roc_threshold_test','rpc_curve_test','rpc_ap_test','rpc_area_test','rpc_threshold_test','-append');
+save(model_fname,'SVMModel','roc_curve_test','roc_op_test','roc_area_test','roc_threshold_test','rpc_curve_test','rpc_ap_test','rpc_area_test','rpc_threshold_test','-append');
     
 %end
 
@@ -190,7 +163,7 @@ legend('Train','Test');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 labels = [ones(1,length(pos_ip_file_names)) , zeros(1,length(neg_ip_file_names))];
 %%% use ratio of probabilities to avoid numerical issues
-values = [Pc_d_pos_test(1,:)-Pc_d_pos_test(2,:) , Pc_d_neg_test(1,:)-Pc_d_neg_test(2,:)];
+values = score.';
 
 %% first decide on plotting order
 if strcmp(Plot.Example_Mode,'ordered')

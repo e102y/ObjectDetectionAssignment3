@@ -1,4 +1,4 @@
-function do_naive_bayes(config_file)
+function do_svm(config_file)
 
 %% Function that runs the Naive Bayes classifier on histograms of
 %% vector-quantized image regions. Based on the paper:
@@ -69,67 +69,28 @@ for a=1:length(neg_ip_file_names)
     X_bg(:,a) = histg';    
 end 
 
-
-%%% Now construct probability of word given class using Naive Bayes classifier 
-%%% as per Csurka and Dance ECCV 04 paper.
-
-%% positive 
-Pw_pos = (1 + sum(X_fg,2)) / (VQ.Codebook_Size + sum(sum(X_fg)));
-
-%% positive 
-Pw_neg = (1 + sum(X_bg,2)) / (VQ.Codebook_Size + sum(sum(X_bg)));
-
-%%% Compute posterior probability of each class given likelihood models
-%%% assume equal priors on each class
-class_priors = [0.5 0.5];
-
-%% positive is index 1
-%% negitive class is index 2
-
-%%%% do everything in log-space for numerical reasons....
-
-%%% positive model on positive training images
-for a=1:length(pos_ip_file_names)
-    Pc_d_pos_train(1,a) = log(class_priors(1)) + sum(X_fg(:,a) .* log(Pw_pos)); 
-end
-
-%%% negative model on positive training images
-for a=1:length(pos_ip_file_names)
-    Pc_d_pos_train(2,a) = log(class_priors(2)) + sum(X_fg(:,a) .* log(Pw_neg)); 
-end
-
-%%% would normalise Pc_d_pos if it wasn't for serious numerical issues if
-%%% VQ.Codebook_Size is large, so just leave unnormalised.
-
-%%% positive model on negative training images
-for a=1:length(neg_ip_file_names)
-    Pc_d_neg_train(1,a) = log(class_priors(1)) + sum(X_bg(:,a) .* log(Pw_pos)); 
-end
-
-%%% negative model on negitive training images
-for a=1:length(neg_ip_file_names)
-    Pc_d_neg_train(2,a) = log(class_priors(2)) + sum(X_bg(:,a) .* log(Pw_neg)); 
-end
-
-%%% would normalise Pc_d_neg if it wasn't for serious numerical issues if
-%%% VQ.Codebook_Size is large, so just leave unnormalised.
+labels = [ones(1,length(X_fg)) , zeros(1,length(X_bg))].';
+%%% Now train the SVM
+histograms = [X_fg; X_bg];
+SVMModel = fitcsvm(histograms, labels, 'ClassNames', [1,0]);
+[predictY, score] = predict(SVMModel, histograms);
 
 %%% Compute ROC and RPC on training data
-labels = [ones(1,length(pos_ip_file_names)) , zeros(1,length(neg_ip_file_names))];
 %%% use ratio of probabilities to avoid numerical issues
-values = [Pc_d_pos_train(1,:)-Pc_d_pos_train(2,:) , Pc_d_neg_train(1,:)-Pc_d_neg_train(2,:)];
 
 %%% compute roc
-[roc_curve_train,roc_op_train,roc_area_train,roc_threshold_train] = roc([values;labels]');
+% label and score
+rocInputMatrix = [score(:,1),labels];
+[roc_curve_train,roc_op_train,roc_area_train,roc_threshold_train] = roc(rocInputMatrix);
 fprintf('Training: Area under ROC curve = %f; Optimal threshold = %f\n', roc_area_train, roc_threshold_train);
 %%% compute rpc
-[rpc_curve_train,rpc_ap_train,rpc_area_train,rpc_threshold_train] = recall_precision_curve([values;labels]',length(pos_ip_file_names));
+[rpc_curve_train,rpc_ap_train,rpc_area_train,rpc_threshold_train] = recall_precision_curve(rocInputMatrix,length(pos_ip_file_names));
 fprintf('Training: Area under RPC curve = %f\n', rpc_area_train);
 %%% Now save model out to file
 [fname,model_ind] = get_new_model_name([RUN_DIR,'/',Global.Model_Dir_Name],Global.Num_Zeros);
 
 %%% save variables to file
-save(fname,'Pw_pos','Pw_neg','class_priors','Pc_d_pos_train','Pc_d_neg_train','roc_curve_train','roc_op_train','roc_area_train','roc_threshold_train','rpc_curve_train','rpc_ap_train','rpc_area_train','rpc_threshold_train');
+save(fname, 'SVMModel','roc_curve_train','roc_op_train','roc_area_train','roc_threshold_train','rpc_curve_train','rpc_ap_train','rpc_area_train','rpc_threshold_train');
 
 %%% copy conf_file into models directory too..
 config_fname = which(config_file);

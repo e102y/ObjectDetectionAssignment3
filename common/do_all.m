@@ -28,7 +28,8 @@ function do_all(config_file)
 %%% structure experiment etc.
 try
     eval(config_file);
-catch
+catch 
+    %disp('failed to evaluate config_file')
 end
 
 if strcmp(EXPERIMENT_TYPE,'naive_bayes')
