@@ -119,10 +119,12 @@ labels = [ones(1,length(pos_ip_file_names)) , zeros(1,length(neg_ip_file_names))
 %%% use ratio of probabilities to avoid numerical issues
 values = [Pc_d_pos_train(1,:)-Pc_d_pos_train(2,:) , Pc_d_neg_train(1,:)-Pc_d_neg_train(2,:)];
 
+curveInput = [values;labels]'
 %%% compute roc
 [roc_curve_train,roc_op_train,roc_area_train,roc_threshold_train] = roc([values;labels]');
 fprintf('Training: Area under ROC curve = %f; Optimal threshold = %f\n', roc_area_train, roc_threshold_train);
 %%% compute rpc
+
 [rpc_curve_train,rpc_ap_train,rpc_area_train,rpc_threshold_train] = recall_precision_curve([values;labels]',length(pos_ip_file_names));
 fprintf('Training: Area under RPC curve = %f\n', rpc_area_train);
 %%% Now save model out to file

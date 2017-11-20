@@ -80,11 +80,11 @@ SVMModel = fitcsvm(histograms, labels, 'ClassNames', [1,0]);
 
 %%% compute roc
 % label and score
-rocInputMatrix = [score(:,1),labels];
-[roc_curve_train,roc_op_train,roc_area_train,roc_threshold_train] = roc(rocInputMatrix);
+InputMatrix = [score(:,1),labels];
+[roc_curve_train,roc_op_train,roc_area_train,roc_threshold_train] = roc(InputMatrix);
 fprintf('Training: Area under ROC curve = %f; Optimal threshold = %f\n', roc_area_train, roc_threshold_train);
 %%% compute rpc
-[rpc_curve_train,rpc_ap_train,rpc_area_train,rpc_threshold_train] = recall_precision_curve(rocInputMatrix,length(pos_ip_file_names));
+[rpc_curve_train,rpc_ap_train,rpc_area_train,rpc_threshold_train] = recall_precision_curve(InputMatrix,length(pos_ip_file_names));
 fprintf('Training: Area under RPC curve = %f\n', rpc_area_train);
 %%% Now save model out to file
 [fname,model_ind] = get_new_model_name([RUN_DIR,'/',Global.Model_Dir_Name],Global.Num_Zeros);
