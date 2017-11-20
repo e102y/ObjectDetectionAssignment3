@@ -8,7 +8,7 @@ classKeep = ~strcmp(species,'setosa');
 
 %Get class data. %Dimensions = 100 x 4 (100 points, each 4 dimensional)
 X = meas(classKeep,:); 
-%%meas is just a floating point data type
+%%meas is a matrix containing measures for each species
 
 %Get labels for each of the 100 points. Dimension = 100 x 1
 y = species(classKeep); %In this case this is a cell array but it could just be an array of integers. For example, +1 for positive class and -1 for negative class
