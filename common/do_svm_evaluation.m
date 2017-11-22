@@ -111,9 +111,9 @@ for a=1:length(neg_ip_file_names)
     X_bg(:,a) = histg';    
 end 
 
-labels = [ones(1,length(X_fg)) , zeros(1,length(X_bg))].';
+labels = [ones(1,size(X_fg, 2)) , zeros(1,size(X_bg, 2))].';
 %%% Now train the SVM
-histograms = [X_fg; X_bg];
+histograms = [X_fg.'; X_bg.'];
 
 %%% Compute ROC and RPC on test data
 %%% use ratio of probabilities to avoid numerical issues
@@ -163,7 +163,7 @@ legend('Train','Test');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 labels = [ones(1,length(pos_ip_file_names)) , zeros(1,length(neg_ip_file_names))];
 %%% use ratio of probabilities to avoid numerical issues
-values = score.';
+values = score(:,1).';
 
 %% first decide on plotting order
 if strcmp(Plot.Example_Mode,'ordered')
@@ -238,11 +238,11 @@ for a=1:nImage_Per_Figure:length(Categories.All_Test_Frames)
         %%% loop over all regions, plotting and coloring according to Pw_z
         for c=1:length(x)
             %%% which topic is favoured by the region?
-            [tmp,preferred_class]=max([Pw_pos(descriptor_vq(c)) , Pw_neg(descriptor_vq(c))]);
+          
             %%% plot center of region
-            plot(x(c),y(c),'Marker',markers{preferred_class},'MarkerEdgeColor',cols{rem(preferred_class-1,7)+1});
+            plot(x(c),y(c),'Marker','+','MarkerEdgeColor','b');
             %%% and circle showing scale
-            drawcircle(y(c),x(c),6*scale(c),cols{rem(preferred_class-1,7)+1},1);
+            drawcircle(y(c),x(c),6*scale(c),'b',1);
             hold on;    
         end
         
@@ -263,7 +263,7 @@ for a=1:nImage_Per_Figure:length(Categories.All_Test_Frames)
                 title(['INCORRECT - Image: ',num2str(imageIndex)]);    
             end
             
-            fprintf('Image: %d \t Score: %f \t Threshold: %f\n',imageIndex,values(index),roc_threshold_train);
+            fprintf('Image: %d \t Scor e: %f \t Threshold: %f\n',imageIndex,values(index),roc_threshold_train);
         end
     end
     

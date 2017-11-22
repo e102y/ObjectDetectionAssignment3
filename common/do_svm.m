@@ -69,9 +69,9 @@ for a=1:length(neg_ip_file_names)
     X_bg(:,a) = histg';    
 end 
 
-labels = [ones(1,length(X_fg)) , zeros(1,length(X_bg))].';
+labels = [ones(1,size(X_fg,2)) , zeros(1,size(X_bg,2))].';
 %%% Now train the SVM
-histograms = [X_fg; X_bg];
+histograms = [X_fg.'; X_bg.'];
 SVMModel = fitcsvm(histograms, labels, 'ClassNames', [1,0]);
 [predictY, score] = predict(SVMModel, histograms);
 
